@@ -25,6 +25,34 @@ export function initEventBus(
   if (redisPub && redisSub) {
     io.adapter(createAdapter(redisPub, redisSub));
   }
+  io.use((socket, next) => {
+    const token = socket.handshake.auth?.token ?? socket.handshake.query?.token;
+    if (!token) return next(new Error('auth_required'));
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+    import('jose')
+      .then((jose) => jose.jwtVerify(token as string, secret))
+      .then(({ payload }) => {
+        (socket as unknown as { data: { userId?: string; tenantId?: string } }).data = {
+          userId: payload.sub as string,
+          tenantId: payload.tenantId as string,
+        };
+        next();
+      })
+      .catch(() => next(new Error('invalid_token')));
+  });
+  io.on('connection', (socket) => {
+    const data = (socket as unknown as { data: { userId?: string; tenantId?: string } }).data;
+    const userId = data?.userId;
+    if (userId) socket.join(`user:${userId}`);
+    socket.on('join_conversation', (conversationId: string) => {
+      if (typeof conversationId !== 'string') return;
+      socket.join(`conversation:${conversationId}`);
+    });
+    socket.on('leave_conversation', (conversationId: string) => {
+      if (typeof conversationId !== 'string') return;
+      socket.leave(`conversation:${conversationId}`);
+    });
+  });
   return io;
 }
 
@@ -34,6 +62,15 @@ export function getIO(): SocketIOServer | null {
 
 export function publishToConversation(conversationId: string, event: DomainEvent): void {
   io?.to(`conversation:${conversationId}`).emit('domain_event', event);
+}
+
+/** Emit a named Socket.io event to a conversation room (e.g. message.token, agent.unavailable). */
+export function emitToConversation(
+  conversationId: string,
+  eventName: string,
+  payload: unknown,
+): void {
+  io?.to(`conversation:${conversationId}`).emit(eventName, payload);
 }
 
 export function publishToUser(userId: string, event: DomainEvent): void {

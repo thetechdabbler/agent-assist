@@ -3,6 +3,7 @@ import { prisma } from '../db/client';
 export type PluginType = 'agent_adapter' | 'renderer' | 'notification' | 'storage' | 'auth_policy';
 
 export interface IAgentAdapter {
+  metadata?: Record<string, unknown>;
   startTurn(request: unknown): AsyncGenerator<unknown> | Promise<unknown>;
   getHealth?(): Promise<{ ok: boolean }>;
   getCapabilities?(): Promise<Record<string, unknown>>;

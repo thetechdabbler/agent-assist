@@ -4,6 +4,10 @@ import { correlationIdMiddleware } from '../middleware/correlation-id';
 import { authMiddleware } from '../middleware/auth';
 import { tenantContextMiddleware } from '../middleware/tenant';
 import { rateLimitMiddleware } from '../middleware/rate-limit';
+import { registerConversationsRouter } from './conversations.router';
+import { registerAttachmentsRouter } from './attachments.router';
+import { registerTenantConfigRouter } from './admin/tenant-config.router';
+import { registerAuthRouter } from './auth.router';
 
 export async function registerRouter(app: FastifyInstance): Promise<void> {
   app.addHook('preHandler', correlationIdMiddleware);
@@ -27,4 +31,9 @@ export async function registerRouter(app: FastifyInstance): Promise<void> {
     if (!auth) return reply.status(401).send({ error: 'unauthorized' });
     return reply.send({ userId: auth.userId, tenantId: auth.tenantId });
   });
+
+  await registerConversationsRouter(app);
+  await registerAttachmentsRouter(app);
+  await registerTenantConfigRouter(app);
+  await registerAuthRouter(app);
 }
