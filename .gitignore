@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Logs
+*.log
+logs/
+pino*.ndjson
+
+# Test artifacts
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# OS
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+
+# Editors
+.vscode/
+.idea/
+*.iml
+
+# Prisma
+backend/prisma/migrations/dev.db
+backend/prisma/*.db-journal
+
+# Docker
+docker-compose.override.yml

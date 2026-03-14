@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "message-envelope.v1",
+  "title": "Message Envelope",
+  "description": "Common envelope for every item in a conversation timeline. Version 1.0.",
+  "type": "object",
+  "required": ["id", "conversationId", "source", "type", "version", "createdAt", "payload"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique message identifier"
+    },
+    "conversationId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "correlationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Traces a turn across all services and the event bus"
+    },
+    "source": {
+      "type": "string",
+      "enum": ["user", "agent", "system"]
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "text",
+        "notification",
+        "goal_update",
+        "job_status",
+        "form_request",
+        "table",
+        "chart",
+        "file",
+        "image",
+        "action_prompt",
+        "error",
+        "system_event"
+      ]
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+$",
+      "description": "MAJOR.MINOR contract version of the payload",
+      "examples": ["1.0", "1.1", "2.0"]
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "payload": {
+      "type": "object",
+      "description": "Type-specific validated payload. Schema enforced by Renderer Contract Service."
+    }
+  }
+}

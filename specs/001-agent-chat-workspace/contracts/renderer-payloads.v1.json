@@ -1,0 +1,177 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "renderer-payloads.v1",
+  "title": "Renderer Payload Schemas",
+  "description": "Validated payload schemas for all structured message types. Version 1.0. All payloads are validated by the Renderer Contract Service before rendering.",
+  "definitions": {
+    "textPayload": {
+      "type": "object",
+      "required": ["text"],
+      "additionalProperties": false,
+      "properties": {
+        "text": { "type": "string" },
+        "format": { "type": "string", "enum": ["plain", "markdown"], "default": "markdown" }
+      }
+    },
+    "tableColumn": {
+      "type": "object",
+      "required": ["key", "label"],
+      "properties": {
+        "key": { "type": "string" },
+        "label": { "type": "string" },
+        "type": { "type": "string", "enum": ["string", "number", "date", "boolean"] },
+        "sortable": { "type": "boolean", "default": true }
+      }
+    },
+    "tableCapabilities": {
+      "type": "object",
+      "properties": {
+        "sort": { "type": "boolean" },
+        "filter": { "type": "boolean" },
+        "paginate": { "type": "boolean" },
+        "export": { "type": "array", "items": { "type": "string", "enum": ["csv", "xlsx", "json"] } }
+      }
+    },
+    "tablePayload": {
+      "type": "object",
+      "required": ["columns", "rows"],
+      "additionalProperties": false,
+      "properties": {
+        "columns": { "type": "array", "items": { "$ref": "#/definitions/tableColumn" }, "minItems": 1 },
+        "rows": { "type": "array", "items": { "type": "object" } },
+        "totalRows": { "type": "integer", "description": "Total rows available for pagination" },
+        "capabilities": { "$ref": "#/definitions/tableCapabilities" }
+      }
+    },
+    "chartSeries": {
+      "type": "object",
+      "required": ["name", "data"],
+      "properties": {
+        "name": { "type": "string" },
+        "data": { "type": "array", "items": { "type": "number" } }
+      }
+    },
+    "chartPayload": {
+      "type": "object",
+      "required": ["kind", "title", "x", "series"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "type": "string", "enum": ["line", "bar", "pie", "area", "progress", "trend"] },
+        "title": { "type": "string" },
+        "x": { "type": "array", "items": { "type": "string" } },
+        "series": { "type": "array", "items": { "$ref": "#/definitions/chartSeries" }, "minItems": 1 },
+        "yAxisLabel": { "type": "string" },
+        "xAxisLabel": { "type": "string" }
+      }
+    },
+    "filePayload": {
+      "type": "object",
+      "required": ["filename", "mimeType", "downloadUrl", "expiresAt"],
+      "additionalProperties": false,
+      "properties": {
+        "filename": { "type": "string" },
+        "mimeType": { "type": "string" },
+        "sizeBytes": { "type": "integer" },
+        "downloadUrl": { "type": "string", "description": "Presigned, time-limited download URL" },
+        "expiresAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "imagePayload": {
+      "type": "object",
+      "required": ["altText", "url", "expiresAt"],
+      "additionalProperties": false,
+      "properties": {
+        "altText": { "type": "string" },
+        "url": { "type": "string", "description": "Presigned, time-limited image URL" },
+        "expiresAt": { "type": "string", "format": "date-time" },
+        "width": { "type": "integer" },
+        "height": { "type": "integer" }
+      }
+    },
+    "formRequestPayload": {
+      "type": "object",
+      "required": ["formSchema", "submitAction"],
+      "additionalProperties": false,
+      "properties": {
+        "formSchema": {
+          "type": "object",
+          "description": "JSON Schema (draft-07) describing required user input"
+        },
+        "uiSchema": {
+          "type": "object",
+          "description": "react-jsonschema-form UI hints"
+        },
+        "prompt": { "type": "string", "description": "Human-readable prompt shown above the form" },
+        "submitAction": { "type": "string", "description": "Action identifier sent back with the form response" }
+      }
+    },
+    "jobStatusPayload": {
+      "type": "object",
+      "required": ["jobId", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "jobId": { "type": "string" },
+        "jobType": { "type": "string" },
+        "status": { "type": "string", "enum": ["scheduled", "queued", "running", "waiting_for_input", "completed", "failed"] },
+        "progressPercent": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "statusMessage": { "type": "string" },
+        "errorSummary": { "type": "string" }
+      }
+    },
+    "notificationPayload": {
+      "type": "object",
+      "required": ["category", "title"],
+      "additionalProperties": false,
+      "properties": {
+        "category": { "type": "string", "enum": ["informational", "success", "action_required", "warning", "failure"] },
+        "title": { "type": "string" },
+        "body": { "type": "string" },
+        "jobId": { "type": "string" },
+        "artifactId": { "type": "string" }
+      }
+    },
+    "goalUpdatePayload": {
+      "type": "object",
+      "required": ["goalId", "title", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "goalId": { "type": "string" },
+        "title": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "completed", "cancelled"] },
+        "description": { "type": "string" }
+      }
+    },
+    "actionPromptPayload": {
+      "type": "object",
+      "required": ["prompt", "actions"],
+      "additionalProperties": false,
+      "properties": {
+        "prompt": { "type": "string" },
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["label", "actionId"],
+            "properties": {
+              "label": { "type": "string" },
+              "actionId": { "type": "string" },
+              "variant": { "type": "string", "enum": ["primary", "secondary", "danger"] }
+            }
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "errorPayload": {
+      "type": "object",
+      "required": ["errorCode", "message"],
+      "additionalProperties": false,
+      "properties": {
+        "errorCode": { "type": "string" },
+        "message": { "type": "string" },
+        "jobId": { "type": "string" },
+        "retryable": { "type": "boolean" }
+      }
+    }
+  }
+}

@@ -5,6 +5,22 @@
 **Status**: Draft
 **Input**: pluggable_agent_chat_architecture.md
 
+## Clarifications
+
+### Session 2026-03-14
+
+- Q: What user roles exist — single role, tenant_admin + user, or three-tier? → A: Single role — all authenticated users have identical permissions. Plugin management, settings administration, and all other privileged operations are accessible to any authenticated user within their tenant.
+- Q: Are FR-016 "settings panel directives" (Agentic System Goal, Daily Workflow) the same concept as US4 Goal entities, or distinct? → A: Same concept — Goal entities (FR-017+) serve both purposes: they are automatically applied as context across all conversations and job executions (FR-016) AND they can spawn scheduled/recurring jobs (US4). There is one Goal entity, one Goal panel; no separate user_settings model for behavioral directives.
+- Q: What happens if a job remains in `waiting_for_input` indefinitely? → A: Configurable per-tenant timeout (default 24 h). On expiry the job auto-transitions to `failed` with a human-readable reason; the user receives a notification. The timeout value is a tenant-level configuration field.
+- Q: When two users in the same session submit the same form simultaneously, which wins? → A: First submission wins. The first valid submission transitions the job out of `waiting_for_input` and is forwarded to the agent. Subsequent submissions that arrive after the transition receive a `409 Conflict` response indicating the form has already been resolved.
+- Q: What is the data retention policy for conversations, jobs, artifacts, and attachments? → A: Out of scope for this feature. Retention, purge scheduling, and compliance-driven deletion are deferred to a future data-management feature. This feature retains all data indefinitely by default.
+- Q: What happens when the external agent system is unreachable while a user sends a message? → A: Fail fast — the send attempt is rejected with a visible inline error card in the conversation timeline. The send button re-enables automatically when the circuit closes. No message is queued; the user decides whether to resend.
+- Q: Who triggers job resumption from `waiting_for_input` — the platform on form submission receipt, or the agent on explicit signal? → A: Platform triggers — the first valid form submission received transitions the job out of `waiting_for_input` automatically. The submission is forwarded to the agent. Subsequent submissions after the transition are rejected with `409 Conflict`.
+- Q: What happens if a form submission fails to reach the agent after the user submits? → A: Retry silently up to 3 times. If all attempts fail, the job transitions to `failed` with reason `"submission_delivery_failed"` and the user receives a failure notification.
+- Q: What happens if the event stream disconnects mid-job and the user misses state transitions? → A: Server maintains a per-connection replay buffer. On reconnect, the client receives all events missed since disconnect in arrival order. No manual refresh required.
+- Q: What happens when the search index is temporarily unavailable? → A: Show a visible search-unavailable error banner with a retry button. Empty results MUST NOT be returned silently.
+- Q: What are the file upload size and type limits? → A: Configurable per tenant with platform defaults: 50 MB max file size; allowed MIME types default to images, PDF, office documents, and plain text. Client-side validation runs before upload. Rejected files show an inline error listing the allowed types and size limit.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Converse With an AI Agent (Priority: P1)
@@ -187,14 +203,14 @@ independently testable.
 
 ### Edge Cases
 
-- What happens when the external agent system is unreachable while a user sends a message?
+- When the external agent system is unreachable, the send attempt fails fast with a visible inline error card in the conversation timeline. The send input re-enables automatically when the circuit breaker closes. No message is queued; the user decides whether to resend.
 - What happens if the agent returns a payload type not recognized by the renderer?
-- What happens if a form submission fails to reach the agent after the user submits?
-- What happens if a file upload exceeds the maximum allowed size or contains a disallowed type?
-- What happens if a job remains in "waiting for input" indefinitely (no timeout defined)?
-- What happens when two users in the same session attempt to submit the same form simultaneously?
-- What happens if the event stream disconnects mid-job and the user misses state transitions?
-- What happens when search index is temporarily unavailable — does the UI degrade gracefully?
+- If a form submission fails to reach the agent after the user submits, the system retries silently up to 3 times. If all retries fail, the job transitions to `failed` with reason `"submission_delivery_failed"` and the user receives a failure notification.
+- If a file upload exceeds the per-tenant size limit (default 50 MB) or has a disallowed MIME type (default allowed: images, PDF, office documents, plain text), the client rejects it before upload with an inline error listing the constraint violated. The server enforces the same limits as a second check and returns a `422` with a structured error if the client validation is bypassed.
+- If a job remains in `waiting_for_input` beyond the per-tenant timeout (default 24 h), it auto-transitions to `failed` with reason `"input_timeout"`, and the user receives a failure notification. The timeout is configurable per tenant via the tenant configuration API.
+- When two users in the same session submit the same form simultaneously, the first valid submission received transitions the job out of `waiting_for_input` and is forwarded to the agent. Any subsequent submission that arrives after the state transition receives a `409 Conflict` response indicating the form has already been resolved.
+- If the event stream disconnects mid-job, the server maintains a per-connection replay buffer. On reconnect, the client automatically receives all events missed since disconnect in arrival order. No manual page refresh is required.
+- When the search index is temporarily unavailable, the UI displays a visible search-unavailable error banner with a retry button. Empty results MUST NOT be returned silently — the unavailability must be surfaced explicitly to the user.
 
 ## Requirements *(mandatory)*
 
@@ -224,6 +240,21 @@ independently testable.
   regardless of whether the conversation is open.
 - **FR-010**: System MUST retain job visibility even when the external agent system is
   temporarily unavailable.
+- **FR-043**: The System MUST maintain a per-connection event replay buffer on the
+  server. On reconnect, the client MUST automatically receive all events missed since
+  disconnect in arrival order with no user action required.
+- **FR-042**: File uploads MUST be validated client-side and server-side against a
+  per-tenant configurable size limit (platform default: 50 MB) and an allowed MIME
+  type list (platform default: images, PDF, office documents, plain text). Rejected
+  uploads MUST show an inline error identifying the violated constraint. The server
+  MUST return `422` with a structured error body if server-side limits are exceeded.
+  Allowed types and size limits MUST be configurable per tenant via the tenant
+  configuration API.
+- **FR-041**: When the external agent system is unreachable, the System MUST fail the
+  send attempt immediately and display a visible inline error card in the conversation
+  timeline. The send input MUST re-enable automatically when the circuit breaker detects
+  agent recovery. No message MAY be silently queued without user awareness; the user
+  decides whether to resend.
 
 **Structured Input**
 
@@ -232,12 +263,23 @@ independently testable.
 - **FR-012**: System MUST validate form input client-side before submission.
 - **FR-013**: System MUST support file and image upload fields within inline forms.
 - **FR-014**: System MUST preserve draft form state across navigation within the session.
-- **FR-015**: System MUST resume the associated job automatically upon successful
-  form submission.
+- **FR-015**: System MUST transition the job out of `waiting_for_input` automatically
+  upon receipt of the first valid form submission and forward it to the agent. If agent
+  delivery fails after 3 retry attempts, the job MUST transition to `failed` with reason
+  `"submission_delivery_failed"` and the user MUST be notified.
+- **FR-040**: The first valid form submission received for a `waiting_for_input` job
+  MUST transition the job out of `waiting_for_input` automatically and forward the
+  submission to the agent. Any subsequent submission arriving after this transition
+  MUST be rejected with `409 Conflict` and a response body indicating the form has
+  already been resolved.
+- **FR-039**: System MUST auto-transition a job from `waiting_for_input` to `failed`
+  (with reason `"input_timeout"`) when the per-tenant input timeout elapses (default
+  24 h, configurable per tenant). A failure notification MUST be sent to the user on
+  expiry.
 
 **Goals**
 
-- **FR-016**: System MUST allow users to define persistent behavioral rules and goals in a dedicated settings panel (e.g., Agentic System Goal, Daily Workflow directives) that are automatically applied as context across all conversations and job executions.
+- **FR-016**: Goal entities (see FR-017) serve as persistent behavioral directives that are automatically applied as context across all conversations and job executions. Examples of directive-type goals include an "Agentic System Goal" (overarching intent) or "Daily Workflow" (recurring instruction). These are the same Goal entity as US4 — not a separate settings model. The Goal panel is the single UI surface for both directive goals and schedulable objectives.
 - **FR-017**: System MUST persist goals independently of individual conversation messages.
 - **FR-018**: System MUST display all jobs associated with a goal in the goal detail view.
 - **FR-019**: System MUST allow users to update or cancel an active goal.
@@ -257,6 +299,9 @@ independently testable.
 
 **Search**
 
+- **FR-044**: When the search index is unavailable, the System MUST display a visible
+  search-unavailable error banner with a retry button. The System MUST NOT return empty
+  results silently — index unavailability MUST be surfaced explicitly to the user.
 - **FR-025**: System MUST index conversations, jobs, artifacts, and goals for full-text
   and structured search.
 - **FR-026**: System MUST support filtering search results by state, date range, and
@@ -278,11 +323,13 @@ independently testable.
 **Plugins & Extensibility**
 
 - **FR-035**: System MUST support pluggable agent adapters so different external agent
-  runtimes can be integrated without modifying core services.
+  runtimes can be integrated without modifying core services. Plugin registration and
+  management is accessible to any authenticated user within the tenant (no separate admin role).
 - **FR-036**: System MUST support pluggable renderer types so new content blocks can be
   added without changing existing renderers.
 - **FR-037**: System MUST support per-tenant plugin enablement — a plugin active for
-  one tenant MUST NOT affect another.
+  one tenant MUST NOT affect another. Any authenticated tenant user may enable or
+  disable plugins for their tenant.
 
 ### Key Entities
 
@@ -291,7 +338,11 @@ independently testable.
 - **Message**: A single item in a conversation timeline. Carries a structured typed
   payload (text, form, table, chart, file, notification, etc.) and a version.
 - **Goal**: A user-defined objective that persists independently of chat. Has a title,
-  description, status, and links to the jobs it has spawned.
+  description, status, optional schedule (cron), and links to the jobs it has spawned.
+  Goals serve dual purpose: (1) directive goals are automatically injected as context
+  into every conversation and job execution (e.g., "Agentic System Goal", "Daily Workflow");
+  (2) scheduled/objective goals spawn background jobs to fulfil a recurring task. Both
+  are the same entity; a `goal_type` field (or equivalent) distinguishes them.
 - **Job**: A record of background work triggered by an agent. Tracks full lifecycle
   state, progress, input/output references, and links to its conversation and goal.
 - **Artifact**: An output produced by a job. Has a type, title, versioned preview, and
@@ -341,3 +392,6 @@ independently testable.
   reference, action card, and error card.
 - Real-time delivery uses a persistent connection (long-lived session); the specific
   transport mechanism is an implementation decision.
+- Data retention, purge scheduling, and compliance-driven deletion (GDPR/CCPA right-to-erasure)
+  are **out of scope** for this feature and deferred to a future data-management feature.
+  All data is retained indefinitely by default in this release.
