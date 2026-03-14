@@ -1,41 +1,43 @@
 # Dependencies
-node_modules/
-.pnpm-store/
+node_modules
+**/node_modules
+.pnpm-store
 
-# Build outputs
-dist/
-build/
-.next/
-out/
-*.tsbuildinfo
+# Build outputs (we rebuild in Docker)
+dist
+.next
+**/dist
+**/.next
+out
 
-# Git
-.git/
+# Git and IDE
+.git
 .gitignore
+.cursor
+.vscode
+*.md
+!README.md
 
-# Docker
-Dockerfile*
-.dockerignore
+# Tests and tooling
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+**/__tests__
+**/tests
+**/vitest*.config.*
+**/playwright*
+**/.playwright
+coverage
+.nyc_output
 
-# Logs and env
-*.log
+# Env files (compose injects env)
 .env
 .env.*
 !.env.example
 
-# Test and coverage
-coverage/
-.nyc_output/
-playwright-report/
-test-results/
-
-# Docs and specs (optional: remove if image should include them)
-specs/
-*.md
-!README.md
-
-# OS and editors
+# Misc
+*.log
 .DS_Store
-Thumbs.db
-.vscode/
-.idea/
+husky
+.husky

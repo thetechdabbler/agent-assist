@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { NotificationCenter } from '@/components/NotificationCenter';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -20,8 +21,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <li>
               <Link href="/search">Search</Link>
             </li>
-            <li>
-              <Link href="/notifications">Notifications</Link>
+            <li style={{ marginTop: 8 }}>
+              <NotificationCenter markSeenOnOpen />
             </li>
           </ul>
         </nav>

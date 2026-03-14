@@ -1,3 +1,8 @@
+import path from 'node:path';
+import dotenv from 'dotenv';
+
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
+
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { getConfig } from './config';
@@ -5,6 +10,7 @@ import { createLogger } from './observability/logger';
 import { registerRouter } from './api/router';
 import { getRedisClient } from './db/redis';
 import { initEventBus } from './realtime/event-bus';
+import { startJobTimeoutScheduler } from './domain/job-timeout-scheduler';
 
 async function main() {
   const config = getConfig();
@@ -22,6 +28,7 @@ async function main() {
   const address = await app.listen({ port: config.PORT, host: config.HOST });
   const httpServer = app.server;
   initEventBus(httpServer, redis, redis.duplicate());
+  startJobTimeoutScheduler();
   log.info({ port: config.PORT, address }, 'Server listening');
 }
 
