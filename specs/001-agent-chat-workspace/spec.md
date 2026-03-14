@@ -209,6 +209,9 @@ independently testable.
 - **FR-004**: System MUST support file and image attachments on user messages.
 - **FR-005**: System MUST store attachments securely and associate them with their
   originating message.
+- **FR-038**: System MUST allow users to generate a QR code for an active conversation
+  that, when scanned on another authenticated device, resumes that conversation with
+  full message history and state intact.
 
 **Job Visibility**
 
@@ -234,7 +237,7 @@ independently testable.
 
 **Goals**
 
-- **FR-016**: System MUST allow users to define a goal within a conversation.
+- **FR-016**: System MUST allow users to define persistent behavioral rules and goals in a dedicated settings panel (e.g., Agentic System Goal, Daily Workflow directives) that are automatically applied as context across all conversations and job executions.
 - **FR-017**: System MUST persist goals independently of individual conversation messages.
 - **FR-018**: System MUST display all jobs associated with a goal in the goal detail view.
 - **FR-019**: System MUST allow users to update or cancel an active goal.
