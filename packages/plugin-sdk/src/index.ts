@@ -7,10 +7,15 @@
  * Constitution reference: Principle II (Pluggable Architecture)
  */
 
-// Re-export agent adapter contract
 export * from './interfaces/agent-adapter.v1';
 export * from './interfaces/event-bus.v1';
 export * from './interfaces/renderer.v1';
-export * from './interfaces/notification.v1';
+export {
+  NOTIFICATION_CONTRACT_VERSION,
+  type NotificationPayload,
+  type NotificationResult,
+  type NotificationChannelMetadata,
+  type INotificationChannel,
+} from './interfaces/notification.v1';
 export * from './interfaces/storage.v1';
 export * from './interfaces/auth-policy.v1';

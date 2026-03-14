@@ -31,7 +31,11 @@ export interface IStoragePlugin {
   /**
    * Upload a file. Returns the storage key for future retrieval.
    */
-  upload(key: string, data: Buffer | NodeJS.ReadableStream, options: UploadOptions): Promise<string>;
+  upload(
+    key: string,
+    data: Uint8Array | NodeJS.ReadableStream,
+    options: UploadOptions,
+  ): Promise<string>;
 
   /**
    * Generate a time-limited signed download URL.

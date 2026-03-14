@@ -43,3 +43,14 @@ backend/prisma/*.db-journal
 
 # Docker
 docker-compose.override.yml
+
+# Emitted files (tsc in repo)
+packages/*/src/**/*.js
+packages/*/src/**/*.d.ts
+packages/*/src/**/*.map
+specs/**/*.js
+specs/**/*.d.ts
+specs/**/*.map
+
+# Cursor
+.cursor/

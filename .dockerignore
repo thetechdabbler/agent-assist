@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile*
+.dockerignore
+
+# Logs and env
+*.log
+.env
+.env.*
+!.env.example
+
+# Test and coverage
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# Docs and specs (optional: remove if image should include them)
+specs/
+*.md
+!README.md
+
+# OS and editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
