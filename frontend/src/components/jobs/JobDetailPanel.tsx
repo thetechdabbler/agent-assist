@@ -2,7 +2,18 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
+import { useState } from 'react';
 import { apiGet, apiPost, apiDelete } from '@/services/api-client';
+
+interface ArtifactSummary {
+  id: string;
+  jobId: string;
+  artifactType: string;
+  title: string;
+  version: number;
+  schemaVersion: string;
+  createdAt: string;
+}
 
 interface JobDetail {
   id: string;
@@ -35,6 +46,13 @@ export function JobDetailPanel({ jobId, onClose, onRetryOrRerun }: JobDetailPane
     queryFn: () => apiGet<JobDetail>(`/api/jobs/${jobId}`),
     enabled: !!jobId,
   });
+
+  const { data: artifactsData } = useQuery({
+    queryKey: ['job', jobId, 'artifacts'],
+    queryFn: () => apiGet<{ artifacts: ArtifactSummary[] }>(`/api/jobs/${jobId}/artifacts`),
+    enabled: !!jobId,
+  });
+  const artifacts = artifactsData?.artifacts ?? [];
 
   const retry = useMutation({
     mutationFn: () => apiPost(`/api/jobs/${jobId}/retry`, {}),
@@ -141,8 +159,87 @@ export function JobDetailPanel({ jobId, onClose, onRetryOrRerun }: JobDetailPane
       </div>
       <div style={{ marginTop: 24 }}>
         <h4 style={{ margin: '0 0 8px' }}>Artifacts</h4>
-        <p style={{ color: '#666', fontSize: 14 }}>No artifacts yet. (Phase 7)</p>
+        {artifacts.length === 0 ? (
+          <p style={{ color: '#666', fontSize: 14 }}>No artifacts yet.</p>
+        ) : (
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            {artifacts.map((a) => (
+              <ArtifactRow key={a.id} artifact={a} conversationId={job.conversationId} />
+            ))}
+          </ul>
+        )}
       </div>
     </div>
+  );
+}
+
+function artifactTypeIcon(type: string): string {
+  switch (type) {
+    case 'table':
+      return '▦';
+    case 'chart':
+      return '📊';
+    case 'file':
+      return '📄';
+    case 'image':
+      return '🖼';
+    case 'text':
+      return '📝';
+    default:
+      return '•';
+  }
+}
+
+function ArtifactRow({
+  artifact,
+  conversationId,
+}: {
+  artifact: ArtifactSummary;
+  conversationId: string;
+}) {
+  const [downloading, setDownloading] = useState(false);
+  const hasDownload = artifact.artifactType === 'file' || artifact.artifactType === 'image';
+
+  const handleDownload = async () => {
+    setDownloading(true);
+    try {
+      const res = await apiGet<{ url: string }>(`/api/artifacts/${artifact.id}/download-url`);
+      if (res?.url) window.open(res.url, '_blank');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  return (
+    <li
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        padding: '8px 0',
+        borderBottom: '1px solid #eee',
+      }}
+    >
+      <span style={{ fontSize: 18 }} title={artifact.artifactType}>
+        {artifactTypeIcon(artifact.artifactType)}
+      </span>
+      <span style={{ flex: 1, fontSize: 14 }}>{artifact.title}</span>
+      <Link
+        href={`/conversations/${conversationId}`}
+        style={{ fontSize: 13, color: '#1976d2', textDecoration: 'none' }}
+      >
+        View
+      </Link>
+      {hasDownload && (
+        <button
+          type="button"
+          onClick={handleDownload}
+          disabled={downloading}
+          style={{ fontSize: 13, padding: '2px 8px', cursor: downloading ? 'wait' : 'pointer' }}
+        >
+          {downloading ? '…' : 'Download'}
+        </button>
+      )}
+    </li>
   );
 }

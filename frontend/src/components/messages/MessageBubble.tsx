@@ -2,6 +2,14 @@
 
 import type { FormRequestPayload } from './InlineFormRenderer';
 import { InlineFormRenderer } from './InlineFormRenderer';
+import { TableArtifactRenderer } from '../artifacts/TableArtifactRenderer';
+import type { TableArtifactPayload } from '../artifacts/TableArtifactRenderer';
+import { ChartArtifactRenderer } from '../artifacts/ChartArtifactRenderer';
+import type { ChartArtifactPayload } from '../artifacts/ChartArtifactRenderer';
+import { FileArtifactRenderer } from '../artifacts/FileArtifactRenderer';
+import type { FileArtifactPayload } from '../artifacts/FileArtifactRenderer';
+import { ImageArtifactRenderer } from '../artifacts/ImageArtifactRenderer';
+import type { ImageArtifactPayload } from '../artifacts/ImageArtifactRenderer';
 
 export interface MessageEnvelope {
   id?: string;
@@ -89,6 +97,42 @@ function GoalUpdateRenderer({ payload }: { payload: Record<string, unknown> }) {
   );
 }
 
+function ActionCardRenderer({ payload }: { payload: Record<string, unknown> }) {
+  const prompt = (payload.prompt as string) ?? '';
+  const actions =
+    (payload.actions as Array<{ label: string; actionId: string; variant?: string }>) ?? [];
+  return (
+    <div
+      style={{ padding: 8, background: '#fff8e1', border: '1px solid #ffecb3', borderRadius: 8 }}
+    >
+      {prompt && <p style={{ margin: '0 0 8px', fontSize: 14 }}>{prompt}</p>}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {actions.map((a) => (
+          <button
+            key={a.actionId}
+            type="button"
+            style={{
+              padding: '6px 12px',
+              borderRadius: 6,
+              border: '1px solid #ccc',
+              background:
+                a.variant === 'primary'
+                  ? '#1976d2'
+                  : a.variant === 'danger'
+                    ? '#c62828'
+                    : '#f5f5f5',
+              color: a.variant === 'primary' || a.variant === 'danger' ? '#fff' : '#333',
+              cursor: 'pointer',
+            }}
+          >
+            {a.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function MessageBubble({
   message,
   tenantId,
@@ -126,6 +170,17 @@ export function MessageBubble({
         return <StatusCardRenderer payload={payload} />;
       case 'goal_update':
         return <GoalUpdateRenderer payload={payload} />;
+      case 'table':
+        return <TableArtifactRenderer payload={payload as unknown as TableArtifactPayload} />;
+      case 'chart':
+        return <ChartArtifactRenderer payload={payload as unknown as ChartArtifactPayload} />;
+      case 'file_reference':
+        return <FileArtifactRenderer payload={payload as unknown as FileArtifactPayload} />;
+      case 'image_reference':
+        return <ImageArtifactRenderer payload={payload as unknown as ImageArtifactPayload} />;
+      case 'action_card':
+      case 'action_prompt':
+        return <ActionCardRenderer payload={payload} />;
       default:
         return <TextRenderer payload={{ text: JSON.stringify(payload) }} />;
     }

@@ -159,15 +159,15 @@
 
 ### Implementation for User Story 5
 
-- [ ] T066 [P] [US5] Implement `ArtifactService` (create with Zod versioned schema validation against `artifact-schema-registry`, list by job, get by ID, `generateSignedDownloadUrl` — generates S3 presigned URL and calls `AuditService.logArtifactAccess`) in `backend/src/services/artifact.service.ts`
-- [ ] T067 [US5] Implement artifact REST API: `GET /artifacts/:id`, `GET /jobs/:id/artifacts`, `GET /artifacts/:id/download-url` (returns time-limited signed URL) in `backend/src/api/artifacts.router.ts`
-- [ ] T068 [US5] Implement versioned artifact schema registry with Zod schemas per `artifact_type` (table, chart, file, image, text) and `schema_version`; reject any payload that does not match a known versioned schema; increment `agent_assist_renderer_validation_failure_total` on rejection in `backend/src/domain/artifact-schema-registry.ts`
-- [ ] T069 [P] [US5] Implement `TableArtifactRenderer` with client-side sortable columns (click-to-sort), filter bar (text filter across all columns), pagination (10/25/50 rows), and CSV/JSON export button in `frontend/src/components/artifacts/TableArtifactRenderer.tsx`
-- [ ] T070 [P] [US5] Implement `ChartArtifactRenderer` rendering validated chart payloads as a visual chart (bar/line/pie per `chartType` field) with title and axis labels in `frontend/src/components/artifacts/ChartArtifactRenderer.tsx`
-- [ ] T071 [P] [US5] Implement `FileArtifactRenderer` showing filename, size, MIME type, and a secure download button that calls `GET /artifacts/:id/download-url` to fetch a fresh signed URL on click in `frontend/src/components/artifacts/FileArtifactRenderer.tsx`
-- [ ] T072 [P] [US5] Implement `ImageArtifactRenderer` rendering inline image from signed URL for `artifact_type: 'image'`; also handles `image_reference` message type displaying an inline image preview in the conversation timeline in `frontend/src/components/artifacts/ImageArtifactRenderer.tsx`
-- [ ] T073 [US5] Register `table`, `chart`, `file_reference`, and `image_reference` message types in `MessageBubble` dispatcher delegating to the appropriate renderer; register `action_card` type (renders agent-proposed action buttons) in `frontend/src/components/messages/MessageBubble.tsx`
-- [ ] T074 [US5] Extend `JobDetailPanel` with populated Artifacts tab: list all artifacts produced by the job with type icon, title, and view/download link in `frontend/src/components/jobs/JobDetailPanel.tsx`
+- [X] T066 [P] [US5] Implement `ArtifactService` (create with Zod versioned schema validation against `artifact-schema-registry`, list by job, get by ID, `generateSignedDownloadUrl` — generates S3 presigned URL and calls `AuditService.logArtifactAccess`) in `backend/src/services/artifact.service.ts`
+- [X] T067 [US5] Implement artifact REST API: `GET /artifacts/:id`, `GET /jobs/:id/artifacts`, `GET /artifacts/:id/download-url` (returns time-limited signed URL) in `backend/src/api/artifacts.router.ts`
+- [X] T068 [US5] Implement versioned artifact schema registry with Zod schemas per `artifact_type` (table, chart, file, image, text) and `schema_version`; reject any payload that does not match a known versioned schema; increment `agent_assist_renderer_validation_failure_total` on rejection in `backend/src/domain/artifact-schema-registry.ts`
+- [X] T069 [P] [US5] Implement `TableArtifactRenderer` with client-side sortable columns (click-to-sort), filter bar (text filter across all columns), pagination (10/25/50 rows), and CSV/JSON export button in `frontend/src/components/artifacts/TableArtifactRenderer.tsx`
+- [X] T070 [P] [US5] Implement `ChartArtifactRenderer` rendering validated chart payloads as a visual chart (bar/line/pie per `chartType` field) with title and axis labels in `frontend/src/components/artifacts/ChartArtifactRenderer.tsx`
+- [X] T071 [P] [US5] Implement `FileArtifactRenderer` showing filename, size, MIME type, and a secure download button that calls `GET /artifacts/:id/download-url` to fetch a fresh signed URL on click in `frontend/src/components/artifacts/FileArtifactRenderer.tsx`
+- [X] T072 [P] [US5] Implement `ImageArtifactRenderer` rendering inline image from signed URL for `artifact_type: 'image'`; also handles `image_reference` message type displaying an inline image preview in the conversation timeline in `frontend/src/components/artifacts/ImageArtifactRenderer.tsx`
+- [X] T073 [US5] Register `table`, `chart`, `file_reference`, and `image_reference` message types in `MessageBubble` dispatcher delegating to the appropriate renderer; register `action_card` type (renders agent-proposed action buttons) in `frontend/src/components/messages/MessageBubble.tsx`
+- [X] T074 [US5] Extend `JobDetailPanel` with populated Artifacts tab: list all artifacts produced by the job with type icon, title, and view/download link in `frontend/src/components/jobs/JobDetailPanel.tsx`
 
 **Checkpoint**: User Stories 1–5 are all independently functional
 
