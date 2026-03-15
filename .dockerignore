@@ -1,0 +1,43 @@
+# Dependencies
+node_modules
+**/node_modules
+.pnpm-store
+
+# Build outputs (we rebuild in Docker)
+dist
+.next
+**/dist
+**/.next
+out
+
+# Git and IDE
+.git
+.gitignore
+.cursor
+.vscode
+*.md
+!README.md
+
+# Tests and tooling
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+**/__tests__
+**/tests
+**/vitest*.config.*
+**/playwright*
+**/.playwright
+coverage
+.nyc_output
+
+# Env files (compose injects env)
+.env
+.env.*
+!.env.example
+
+# Misc
+*.log
+.DS_Store
+husky
+.husky
