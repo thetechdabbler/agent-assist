@@ -12,6 +12,7 @@ import { registerJobsRouter } from './jobs.router';
 import { registerNotificationsRouter } from './notifications.router';
 import { registerGoalsRouter } from './goals.router';
 import { registerArtifactsRouter } from './artifacts.router';
+import { registerSearchRouter } from './search.router';
 
 export async function registerRouter(app: FastifyInstance): Promise<void> {
   app.addHook('preHandler', correlationIdMiddleware);
@@ -44,4 +45,5 @@ export async function registerRouter(app: FastifyInstance): Promise<void> {
   await registerNotificationsRouter(app);
   await registerGoalsRouter(app);
   await registerArtifactsRouter(app);
+  await registerSearchRouter(app);
 }

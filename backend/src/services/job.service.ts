@@ -2,6 +2,7 @@ import { prisma } from '../db/client';
 import { getIO } from '../realtime/event-bus';
 import * as stateMachine from '../domain/job-state-machine';
 import type { TransitionResult } from '../domain/job-state-machine';
+import { indexDocumentFireAndForget } from './search-indexer.service';
 
 async function resolveGoalId(
   goalId: string | null | undefined,
@@ -60,6 +61,14 @@ export async function createJob(input: CreateJobInput): Promise<{
   if (conversation?.ownerUserId) {
     io?.to(`user:${conversation.ownerUserId}`).emit('job.created', payload);
   }
+  indexDocumentFireAndForget('jobs', job.id, {
+    tenant_id: job.tenantId,
+    conversation_id: job.conversationId,
+    job_type: job.jobType,
+    status: job.status,
+    error_summary: job.errorSummary ?? '',
+    updated_at: job.updatedAt.toISOString(),
+  });
   return {
     id: job.id,
     conversationId: job.conversationId,

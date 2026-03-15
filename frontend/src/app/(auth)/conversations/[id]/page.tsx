@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useRef, useEffect } from 'react';
 import { apiGet, apiPost, ApiError } from '@/services/api-client';
@@ -31,7 +31,9 @@ interface ConversationDetail {
 
 export default function ConversationPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const id = params?.id as string;
+  const highlightMessageId = searchParams.get('highlight') ?? null;
   const queryClient = useQueryClient();
   const { data: session } = useSession();
   const tenantId = (session as { tenantId?: string })?.tenantId ?? '';
@@ -39,7 +41,9 @@ export default function ConversationPage() {
   const [input, setInput] = useState('');
   const [lastSentMessageId, setLastSentMessageId] = useState<string | null>(null);
   const [handoffOpen, setHandoffOpen] = useState(false);
+  const [highlightActive, setHighlightActive] = useState(!!highlightMessageId);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const highlightRef = useRef<HTMLDivElement>(null);
 
   const { data: conv, isLoading } = useQuery({
     queryKey: ['conversation', id],
@@ -82,6 +86,16 @@ export default function ConversationPage() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [conv?.messages?.length, tokens.length]);
+
+  useEffect(() => {
+    if (!highlightMessageId || !conv?.messages?.length || !highlightRef.current) return;
+    const found = conv.messages.some((m) => m.id === highlightMessageId);
+    if (found) {
+      highlightRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const t = setTimeout(() => setHighlightActive(false), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [highlightMessageId, conv?.messages]);
 
   if (!id || id === 'new') return null;
   if (isLoading) {
@@ -142,20 +156,33 @@ export default function ConversationPage() {
             padding: 16,
           }}
         >
-          {messages.map((m) => (
-            <MessageBubble
-              key={m.id}
-              message={{
-                id: m.id,
-                conversationId: id,
-                source: m.sourceType as 'user' | 'agent' | 'system',
-                type: m.type,
-                payload: m.payloadJson as Record<string, unknown>,
-                createdAt: m.createdAt,
-              }}
-              tenantId={tenantId || undefined}
-            />
-          ))}
+          {messages.map((m) => {
+            const isHighlight = m.id === highlightMessageId && highlightActive;
+            const wrapper = (
+              <div
+                key={m.id}
+                ref={m.id === highlightMessageId ? highlightRef : undefined}
+                style={{
+                  backgroundColor: isHighlight ? 'rgba(255, 235, 59, 0.4)' : undefined,
+                  borderRadius: 8,
+                  transition: 'background-color 0.5s ease',
+                }}
+              >
+                <MessageBubble
+                  message={{
+                    id: m.id,
+                    conversationId: id,
+                    source: m.sourceType as 'user' | 'agent' | 'system',
+                    type: m.type,
+                    payload: m.payloadJson as Record<string, unknown>,
+                    createdAt: m.createdAt,
+                  }}
+                  tenantId={tenantId || undefined}
+                />
+              </div>
+            );
+            return wrapper;
+          })}
           {streamingText && (
             <MessageBubble
               message={{

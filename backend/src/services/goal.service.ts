@@ -1,5 +1,6 @@
 import { prisma } from '../db/client';
 import { getIO } from '../realtime/event-bus';
+import { indexDocumentFireAndForget, updateDocumentFireAndForget } from './search-indexer.service';
 
 export type GoalType = 'directive' | 'scheduled';
 export type GoalStatus = 'active' | 'completed' | 'cancelled';
@@ -46,6 +47,15 @@ export async function createGoal(input: CreateGoalInput): Promise<{
     goalType: goal.goalType,
     title: goal.title,
     status: goal.status,
+  });
+  indexDocumentFireAndForget('goals', goal.id, {
+    tenant_id: goal.tenantId,
+    conversation_id: goal.conversationId ?? '',
+    title: goal.title,
+    description: goal.description ?? '',
+    goal_type: goal.goalType,
+    status: goal.status,
+    updated_at: goal.updatedAt.toISOString(),
   });
   return {
     id: goal.id,
@@ -155,13 +165,22 @@ export async function updateGoal(
     where: { id: goalId, tenantId, userId },
   });
   if (!goal) return false;
-  await prisma.goal.update({
+  const updated = await prisma.goal.update({
     where: { id: goalId },
     data: {
       ...(updates.title != null && { title: updates.title }),
       ...(updates.description !== undefined && { description: updates.description }),
       ...(updates.schedule !== undefined && { schedule: updates.schedule }),
     },
+  });
+  updateDocumentFireAndForget('goals', goalId, {
+    tenant_id: tenantId,
+    conversation_id: updated.conversationId ?? '',
+    title: updated.title,
+    description: updated.description ?? '',
+    goal_type: updated.goalType,
+    status: updated.status,
+    updated_at: updated.updatedAt.toISOString(),
   });
   const io = getIO();
   io?.to(`user:${userId}`).emit('goal.updated', {
@@ -182,9 +201,18 @@ export async function cancelGoal(
     where: { id: goalId, tenantId, userId },
   });
   if (!goal) return false;
-  await prisma.goal.update({
+  const updated = await prisma.goal.update({
     where: { id: goalId },
     data: { status: 'cancelled' },
+  });
+  updateDocumentFireAndForget('goals', goalId, {
+    tenant_id: tenantId,
+    conversation_id: updated.conversationId ?? '',
+    title: updated.title,
+    description: updated.description ?? '',
+    goal_type: updated.goalType,
+    status: updated.status,
+    updated_at: updated.updatedAt.toISOString(),
   });
   const io = getIO();
   io?.to(`user:${userId}`).emit('goal.cancelled', {

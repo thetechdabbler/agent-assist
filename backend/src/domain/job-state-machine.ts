@@ -2,6 +2,7 @@ import { prisma } from '../db/client';
 import * as auditService from '../services/audit.service';
 import { getIO } from '../realtime/event-bus';
 import { agentAssistJobCount } from '../observability/metrics';
+import { updateDocumentFireAndForget } from '../services/search-indexer.service';
 
 export const JOB_STATUSES = [
   'scheduled',
@@ -62,9 +63,18 @@ export async function transition(
   if (to === 'completed' || to === 'failed') updateData.completedAt = now;
   if (to === 'scheduled' && from === 'failed') updateData.retryCount = job.retryCount + 1;
 
-  await prisma.job.update({
+  const updated = await prisma.job.update({
     where: { id: jobId },
     data: updateData,
+  });
+
+  updateDocumentFireAndForget('jobs', jobId, {
+    tenant_id: job.tenantId,
+    conversation_id: job.conversationId,
+    job_type: job.jobType,
+    status: to,
+    error_summary: opts?.errorSummary ?? updated.errorSummary ?? '',
+    updated_at: updated.updatedAt.toISOString(),
   });
 
   await auditService.logJobTransition(

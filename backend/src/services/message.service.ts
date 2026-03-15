@@ -1,6 +1,16 @@
 import { prisma } from '../db/client';
+import { indexDocumentFireAndForget } from './search-indexer.service';
 
 const DEFAULT_VERSION = '1.0';
+
+function extractPayloadText(payload: Record<string, unknown>): string {
+  if (typeof payload.text === 'string') return payload.text;
+  try {
+    return JSON.stringify(payload).slice(0, 10_000);
+  } catch {
+    return '';
+  }
+}
 
 export interface AppendMessageInput {
   conversationId: string;
@@ -30,6 +40,20 @@ export async function appendMessage(input: AppendMessageInput): Promise<{
       correlationId: input.correlationId ?? null,
     },
   });
+  const conv = await prisma.conversation.findFirst({
+    where: { id: input.conversationId },
+    select: { tenantId: true },
+  });
+  if (conv) {
+    indexDocumentFireAndForget('messages', msg.id, {
+      tenant_id: conv.tenantId,
+      conversation_id: input.conversationId,
+      payload_text: extractPayloadText(input.payloadJson),
+      type: input.type,
+      created_at: msg.createdAt.toISOString(),
+      updated_at: msg.createdAt.toISOString(),
+    });
+  }
   return {
     id: msg.id,
     conversationId: msg.conversationId,

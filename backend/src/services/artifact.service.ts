@@ -1,6 +1,7 @@
 import { prisma } from '../db/client';
 import * as storageService from './storage.service';
 import * as auditService from './audit.service';
+import { indexDocumentFireAndForget } from './search-indexer.service';
 import {
   validateArtifactPayload,
   ARTIFACT_SCHEMA_VERSION,
@@ -22,9 +23,7 @@ export interface CreateArtifactInput {
   metadataJson?: Record<string, unknown> | null;
 }
 
-export async function createArtifact(
-  input: CreateArtifactInput,
-): Promise<
+export async function createArtifact(input: CreateArtifactInput): Promise<
   | {
       ok: true;
       artifact: {
@@ -67,11 +66,25 @@ export async function createArtifact(
       title: input.title,
       version: input.version ?? 1,
       storageUri: input.storageUri ?? null,
-      payloadJson: input.payloadJson ?? undefined,
-      previewJson: input.previewJson ?? undefined,
+      payloadJson: input.payloadJson != null ? (input.payloadJson as object) : undefined,
+      previewJson: input.previewJson != null ? (input.previewJson as object) : undefined,
       schemaVersion,
-      metadataJson: input.metadataJson ?? undefined,
+      metadataJson: input.metadataJson != null ? (input.metadataJson as object) : undefined,
     },
+  });
+
+  const previewText =
+    input.previewJson && typeof input.previewJson === 'object'
+      ? JSON.stringify(input.previewJson).slice(0, 5000)
+      : '';
+  indexDocumentFireAndForget('artifacts', artifact.id, {
+    tenant_id: input.tenantId,
+    job_id: input.jobId,
+    conversation_id: input.conversationId,
+    title: input.title,
+    artifact_type: input.artifactType,
+    preview_json: previewText,
+    created_at: artifact.createdAt.toISOString(),
   });
 
   return {

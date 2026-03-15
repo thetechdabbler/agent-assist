@@ -2,6 +2,7 @@ import { prisma } from '../db/client';
 import { publishToConversation } from '../realtime/event-bus';
 import { getCorrelationId } from '../middleware/correlation-id';
 import type { FastifyRequest } from 'fastify';
+import { indexDocumentFireAndForget, updateDocumentFireAndForget } from './search-indexer.service';
 
 const DEFAULT_TITLE = 'New conversation';
 
@@ -26,6 +27,13 @@ export async function createConversation(
     tenantId,
     payload: { id: conv.id, title: conv.title, ownerUserId, tenantId },
     correlationId,
+  });
+  indexDocumentFireAndForget('conversations', conv.id, {
+    tenant_id: tenantId,
+    title: conv.title ?? '',
+    owner_user_id: ownerUserId,
+    status: conv.status,
+    updated_at: conv.updatedAt.toISOString(),
   });
   return {
     id: conv.id,
@@ -97,6 +105,21 @@ export async function updateTitle(
     where: { id: conversationId, tenantId, ownerUserId },
     data: { title },
   });
+  if (updated.count > 0) {
+    const conv = await prisma.conversation.findFirst({
+      where: { id: conversationId },
+      select: { status: true, updatedAt: true },
+    });
+    if (conv) {
+      updateDocumentFireAndForget('conversations', conversationId, {
+        tenant_id: tenantId,
+        title,
+        owner_user_id: ownerUserId,
+        status: conv.status,
+        updated_at: conv.updatedAt.toISOString(),
+      });
+    }
+  }
   return updated.count > 0;
 }
 
@@ -109,5 +132,20 @@ export async function archive(
     where: { id: conversationId, tenantId, ownerUserId },
     data: { status: 'archived' },
   });
+  if (updated.count > 0) {
+    const conv = await prisma.conversation.findFirst({
+      where: { id: conversationId },
+      select: { title: true, updatedAt: true },
+    });
+    if (conv) {
+      updateDocumentFireAndForget('conversations', conversationId, {
+        tenant_id: tenantId,
+        title: conv.title ?? '',
+        owner_user_id: ownerUserId,
+        status: 'archived',
+        updated_at: conv.updatedAt.toISOString(),
+      });
+    }
+  }
   return updated.count > 0;
 }
