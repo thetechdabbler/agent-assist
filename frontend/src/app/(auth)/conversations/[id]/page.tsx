@@ -153,6 +153,7 @@ export default function ConversationPage() {
                 payload: m.payloadJson as Record<string, unknown>,
                 createdAt: m.createdAt,
               }}
+              tenantId={tenantId || undefined}
             />
           ))}
           {streamingText && (
@@ -163,6 +164,7 @@ export default function ConversationPage() {
                 type: 'text',
                 payload: { text: streamingText, format: 'plain' },
               }}
+              tenantId={tenantId || undefined}
             />
           )}
           {agentUnavailable && <AgentUnavailableCard />}

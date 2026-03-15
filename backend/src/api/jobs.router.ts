@@ -3,6 +3,7 @@ import { requireAuth } from '../middleware/auth';
 import { rateLimitMiddleware } from '../middleware/rate-limit';
 import { prisma } from '../db/client';
 import * as jobService from '../services/job.service';
+import * as formRequestService from '../services/form-request.service';
 
 export async function registerJobsRouter(app: FastifyInstance): Promise<void> {
   app.addHook('preHandler', rateLimitMiddleware);
@@ -27,6 +28,33 @@ export async function registerJobsRouter(app: FastifyInstance): Promise<void> {
     });
     if (conv?.ownerUserId !== auth.userId) return reply.status(403).send({ error: 'forbidden' });
     return reply.send(job);
+  });
+
+  app.post<{
+    Params: { id: string };
+    Body: Record<string, unknown>;
+  }>('/api/jobs/:id/form-response', async (request, reply) => {
+    const auth = requireAuth(request);
+    const jobId = request.params.id;
+    const body = (request.body as Record<string, unknown>) ?? {};
+    const payload =
+      typeof body.payload === 'object' && body.payload !== null
+        ? (body.payload as Record<string, unknown>)
+        : body;
+    const result = await formRequestService.submitFormResponse(jobId, auth.tenantId, payload, {
+      userId: auth.userId,
+      attachments: Array.isArray(body.attachments) ? body.attachments : undefined,
+    });
+    if (result.ok) return reply.send({ ok: true });
+    if ('conflict' in result && result.conflict)
+      return reply.status(409).send({ error: 'form_already_resolved' });
+    if ('error' in result) {
+      if (result.error === 'forbidden') return reply.status(403).send({ error: 'forbidden' });
+      if (result.error === 'submission_delivery_failed')
+        return reply.status(502).send({ error: result.error });
+      return reply.status(422).send({ error: result.error });
+    }
+    return reply.status(422).send({ error: 'validation_failed' });
   });
 
   app.post<{ Params: { id: string } }>('/api/jobs/:id/retry', async (request, reply) => {

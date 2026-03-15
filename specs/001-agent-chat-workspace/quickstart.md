@@ -25,10 +25,48 @@ pnpm install
 
 ---
 
-## 2. Start infrastructure (Docker)
+## 2. Full stack in Docker (recommended for “it just runs”)
+
+Brings up **Postgres, Redis, OpenSearch, MinIO, backend API, and frontend** with correct startup order and health checks.
+
+**Prerequisites:** Docker 24+; on **Linux**, set `vm.max_map_count=262144` once (see repo `README.md`) or OpenSearch may exit.
 
 ```bash
-docker compose up -d
+# Optional: copy and set JWT/NEXTAUTH secrets (defaults are fine for local only)
+cp .env.docker.example .env
+
+docker compose up --build -d
+```
+
+First boot can take several minutes (image builds + OpenSearch). Check status:
+
+```bash
+docker compose ps
+docker compose logs -f backend
+```
+
+| URL | Service |
+|-----|--------|
+| http://localhost:3000 | Web app |
+| http://localhost:4000 | API |
+| http://localhost:9001 | MinIO console (minioadmin / minioadmin) |
+
+To stop: `docker compose down`. To reset data: `docker compose down -v`.
+
+---
+
+## 2b. Infrastructure only (Docker) — dev on host Node
+
+If you run backend/frontend with `pnpm` on your machine and only want databases in Docker:
+
+```bash
+docker compose up -d postgres redis opensearch minio
+```
+
+Wait until healthy:
+
+```bash
+docker compose ps
 ```
 
 This starts:
@@ -37,11 +75,7 @@ This starts:
 - **OpenSearch 2** on port `9200`
 - **MinIO** (S3-compatible) on port `9000`, console on `9001`
 
-Wait for all services to be healthy:
-
-```bash
-docker compose ps
-```
+Note: MinIO bucket `agent-assist-dev` is created by the full-stack compose (`minio-init`). For infra-only, create the bucket once (MinIO console → Buckets) or run `minio-init` once after MinIO is up.
 
 ---
 

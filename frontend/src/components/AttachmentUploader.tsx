@@ -9,11 +9,18 @@ interface UploadLimits {
   allowedMimeTypes: string[];
 }
 
+export interface AttachmentRef {
+  id: string;
+  storageKey: string;
+  filename: string;
+  mimeType: string;
+}
+
 interface AttachmentUploaderProps {
   conversationId: string;
   messageId: string;
   tenantId: string;
-  onUploaded?: () => void;
+  onUploaded?: (attachment?: AttachmentRef) => void;
 }
 
 export function AttachmentUploader({
@@ -56,13 +63,16 @@ export function AttachmentUploader({
     try {
       const buf = await file.arrayBuffer();
       const base64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
-      await apiPost(`/api/conversations/${conversationId}/messages/${messageId}/attachments`, {
-        filename: file.name,
-        mimeType: file.type,
-        sizeBytes: file.size,
-        content: base64,
-      });
-      onUploaded?.();
+      const res = await apiPost<AttachmentRef>(
+        `/api/conversations/${conversationId}/messages/${messageId}/attachments`,
+        {
+          filename: file.name,
+          mimeType: file.type,
+          sizeBytes: file.size,
+          content: base64,
+        },
+      );
+      onUploaded?.(res);
       if (inputRef.current) inputRef.current.value = '';
     } catch (e) {
       if (e instanceof ApiError && e.body && typeof e.body === 'object' && 'code' in e.body) {

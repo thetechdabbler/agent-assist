@@ -1,5 +1,8 @@
 'use client';
 
+import type { FormRequestPayload } from './InlineFormRenderer';
+import { InlineFormRenderer } from './InlineFormRenderer';
+
 export interface MessageEnvelope {
   id?: string;
   conversationId: string;
@@ -49,7 +52,50 @@ function NotificationRenderer({ payload }: { payload: Record<string, unknown> })
   );
 }
 
-export function MessageBubble({ message }: { message: MessageEnvelope }) {
+function StatusCardRenderer({ payload }: { payload: Record<string, unknown> }) {
+  const jobId = (payload.jobId as string) ?? '';
+  const status = (payload.status as string) ?? '';
+  const statusMessage = (payload.statusMessage as string) ?? '';
+  const errorSummary = (payload.errorSummary as string) ?? '';
+  return (
+    <div
+      style={{ padding: 8, background: '#e8f5e9', border: '1px solid #a5d6a7', borderRadius: 8 }}
+    >
+      {jobId && <span style={{ fontSize: 12, color: '#666' }}>Job {jobId.slice(0, 8)}…</span>}
+      <div style={{ fontWeight: 500, marginTop: 4 }}>{status}</div>
+      {statusMessage && <p style={{ margin: '4px 0 0', fontSize: 14 }}>{statusMessage}</p>}
+      {errorSummary && (
+        <p style={{ margin: '4px 0 0', fontSize: 13, color: '#c62828' }}>{errorSummary}</p>
+      )}
+    </div>
+  );
+}
+
+function GoalUpdateRenderer({ payload }: { payload: Record<string, unknown> }) {
+  const goalId = (payload.goalId as string) ?? '';
+  const title = (payload.title as string) ?? '';
+  const status = (payload.status as string) ?? '';
+  const event = (payload.event as string) ?? 'updated';
+  return (
+    <div
+      style={{ padding: 8, background: '#e3f2fd', border: '1px solid #90caf9', borderRadius: 8 }}
+    >
+      {goalId && <span style={{ fontSize: 12, color: '#666' }}>Goal</span>}
+      {title && <div style={{ fontWeight: 500, marginTop: 4 }}>{title}</div>}
+      <div style={{ fontSize: 13, marginTop: 4 }}>
+        {event === 'cancelled' ? 'Cancelled' : event === 'updated' ? `Updated · ${status}` : status}
+      </div>
+    </div>
+  );
+}
+
+export function MessageBubble({
+  message,
+  tenantId,
+}: {
+  message: MessageEnvelope;
+  tenantId?: string;
+}) {
   const { source, type, payload = {} } = message;
   const isUser = source === 'user';
   const align = isUser ? 'flex-end' : 'flex-start';
@@ -65,6 +111,21 @@ export function MessageBubble({ message }: { message: MessageEnvelope }) {
         return <ErrorCardRenderer payload={payload} />;
       case 'notification':
         return <NotificationRenderer payload={payload} />;
+      case 'form_request':
+        return (
+          <InlineFormRenderer
+            payload={payload as unknown as FormRequestPayload}
+            conversationId={message.conversationId}
+            messageId={message.id}
+            tenantId={tenantId}
+            onSubmitted={undefined}
+          />
+        );
+      case 'job_status':
+      case 'status_card':
+        return <StatusCardRenderer payload={payload} />;
+      case 'goal_update':
+        return <GoalUpdateRenderer payload={payload} />;
       default:
         return <TextRenderer payload={{ text: JSON.stringify(payload) }} />;
     }

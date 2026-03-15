@@ -44,6 +44,25 @@ export function createHttpAgentAdapter(): IAgentAdapter {
       const body = (await res.json()) as { jobId?: string };
       return { jobId: body.jobId ?? 'unknown', status: 'accepted' };
     },
+    async submitFormInput(request: {
+      jobId: string;
+      tenantId: string;
+      formResponse: Record<string, unknown>;
+      attachments?: unknown[];
+    }): Promise<void> {
+      if (!baseUrl) return;
+      const res = await fetch(`${baseUrl.replace(/\/$/, '')}/form-response`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jobId: request.jobId,
+          tenantId: request.tenantId,
+          formResponse: request.formResponse,
+          attachments: request.attachments ?? [],
+        }),
+      });
+      if (!res.ok) throw new Error(`Agent form-response responded ${res.status}`);
+    },
     async getHealth(): Promise<{ ok: boolean }> {
       if (!baseUrl) return { ok: false };
       try {

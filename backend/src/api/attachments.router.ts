@@ -20,15 +20,17 @@ const DEFAULT_ALLOWED_MIME = [
 function getUploadLimits(
   tenantId: string,
 ): Promise<{ maxSizeBytes: number; allowedMimeTypes: string[] }> {
-  return prisma.tenant.findUnique({ where: { id: tenantId } }).then((t) => {
-    const config = (
-      t?.configJson as { uploadLimits?: { maxSizeBytes?: number; allowedMimeTypes?: string[] } }
-    )?.uploadLimits;
-    return {
-      maxSizeBytes: config?.maxSizeBytes ?? DEFAULT_MAX_SIZE_BYTES,
-      allowedMimeTypes: config?.allowedMimeTypes ?? DEFAULT_ALLOWED_MIME,
-    };
-  });
+  return prisma.tenant
+    .findUnique({ where: { id: tenantId } })
+    .then((t: { configJson?: unknown } | null) => {
+      const config = (
+        t?.configJson as { uploadLimits?: { maxSizeBytes?: number; allowedMimeTypes?: string[] } }
+      )?.uploadLimits;
+      return {
+        maxSizeBytes: config?.maxSizeBytes ?? DEFAULT_MAX_SIZE_BYTES,
+        allowedMimeTypes: config?.allowedMimeTypes ?? DEFAULT_ALLOWED_MIME,
+      };
+    });
 }
 
 export async function registerAttachmentsRouter(app: FastifyInstance): Promise<void> {

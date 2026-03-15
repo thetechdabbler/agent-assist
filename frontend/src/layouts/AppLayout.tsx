@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { NotificationCenter } from '@/components/NotificationCenter';
+import { GoalPanel } from '@/components/goals/GoalPanel';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -26,6 +27,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </li>
           </ul>
         </nav>
+        <GoalPanel />
       </aside>
       <main style={{ flex: 1, padding: 16 }}>{children}</main>
     </div>

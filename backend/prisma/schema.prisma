@@ -72,6 +72,7 @@ model Conversation {
   goals       Goal[]        @relation("ConversationGoals")
   jobs        Job[]
   artifacts   Artifact[]
+  formRequests FormRequest[]
 
   @@index([ownerUserId, status])
   @@index([tenantId, status])
@@ -92,6 +93,7 @@ model Message {
 
   conversation Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   attachments  Attachment[]
+  formRequest   FormRequest?
 
   @@index([conversationId, createdAt])
   @@index([correlationId])
@@ -176,6 +178,7 @@ model Job {
   tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   artifacts    Artifact[]
   notifications Notification[]
+  formRequests FormRequest[]
 
   @@index([conversationId, status])
   @@index([tenantId, status])
@@ -274,6 +277,25 @@ model TenantPlugin {
 
   @@id([tenantId, pluginId])
   @@map("tenant_plugins")
+}
+
+// ─── Form Requests (US3: structured input for waiting_for_input jobs) ─────────
+
+model FormRequest {
+  id             String    @id @default(uuid()) @db.Uuid
+  jobId          String    @map("job_id") @db.Uuid
+  conversationId String    @map("conversation_id") @db.Uuid
+  messageId      String    @unique @map("message_id") @db.Uuid
+  resolvedAt     DateTime? @map("resolved_at") @db.Timestamptz
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  job          Job          @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  message      Message      @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([jobId])
+  @@index([conversationId])
+  @@map("form_requests")
 }
 
 // ─── Audit Log ───────────────────────────────────────────────────────────────

@@ -5,6 +5,12 @@ export type PluginType = 'agent_adapter' | 'renderer' | 'notification' | 'storag
 export interface IAgentAdapter {
   metadata?: Record<string, unknown>;
   startTurn(request: unknown): AsyncGenerator<unknown> | Promise<unknown>;
+  submitFormInput?(request: {
+    jobId: string;
+    tenantId: string;
+    formResponse: Record<string, unknown>;
+    attachments?: unknown[];
+  }): Promise<void>;
   getHealth?(): Promise<{ ok: boolean }>;
   getCapabilities?(): Promise<Record<string, unknown>>;
 }

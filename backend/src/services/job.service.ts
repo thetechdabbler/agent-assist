@@ -3,6 +3,19 @@ import { getIO } from '../realtime/event-bus';
 import * as stateMachine from '../domain/job-state-machine';
 import type { TransitionResult } from '../domain/job-state-machine';
 
+async function resolveGoalId(
+  goalId: string | null | undefined,
+  tenantId: string,
+): Promise<string | null> {
+  if (!goalId) return null;
+  const goal = await prisma.goal.findFirst({
+    where: { id: goalId, tenantId },
+    select: { status: true },
+  });
+  if (!goal || goal.status === 'cancelled') return null;
+  return goalId;
+}
+
 export interface CreateJobInput {
   conversationId: string;
   tenantId: string;
@@ -20,11 +33,12 @@ export async function createJob(input: CreateJobInput): Promise<{
   status: string;
   createdAt: Date;
 }> {
+  const effectiveGoalId = await resolveGoalId(input.goalId, input.tenantId);
   const job = await prisma.job.create({
     data: {
       conversationId: input.conversationId,
       tenantId: input.tenantId,
-      goalId: input.goalId ?? null,
+      goalId: effectiveGoalId,
       jobType: input.jobType,
       externalJobRef: input.externalJobRef ?? null,
       status: 'scheduled',
@@ -98,8 +112,8 @@ export async function listJobs(
         where: { ownerUserId: opts.userId, tenantId },
         select: { id: true },
       })
-      .then((c) => c.map((x) => x.id));
-    return jobs.filter((j) => convIds.includes(j.conversationId));
+      .then((c: { id: string }[]) => c.map((x: { id: string }) => x.id));
+    return jobs.filter((j: { conversationId: string }) => convIds.includes(j.conversationId));
   }
   return jobs;
 }
