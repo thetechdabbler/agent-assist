@@ -30,6 +30,8 @@ export default function GoalsPage() {
       apiGet<GoalsResponse>(
         typeFilter ? `/api/goals?goalType=${encodeURIComponent(typeFilter)}` : '/api/goals',
       ),
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const goals = data?.goals ?? [];

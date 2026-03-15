@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { apiGet, apiPatch } from '@/services/api-client';
-import { useJobUpdates } from '@/hooks/useJobUpdates';
 
 interface NotificationItem {
   id: string;
@@ -29,22 +28,17 @@ export function NotificationCenter({ markSeenOnOpen = true }: NotificationCenter
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  useJobUpdates({
-    onNotification: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      queryClient.invalidateQueries({ queryKey: ['notifications-count'] });
-    },
-  });
-
   const { data, isLoading } = useQuery({
     queryKey: ['notifications', open],
     queryFn: () => apiGet<NotificationsResponse>('/api/notifications'),
     enabled: open,
+    refetchOnWindowFocus: false,
   });
 
   const { data: countData } = useQuery({
     queryKey: ['notifications-count'],
     queryFn: () => apiGet<{ count: number }>('/api/notifications/count'),
+    refetchOnWindowFocus: false,
   });
   const count = countData?.count ?? 0;
 

@@ -6,6 +6,31 @@ import { redeemToken } from '../db/redis';
 import { prisma } from '../db/client';
 
 export async function registerAuthRouter(app: FastifyInstance): Promise<void> {
+  app.post<{ Body: { email?: string } }>('/api/auth/session', async (request, reply) => {
+    const body = (request.body as { email?: string }) ?? {};
+    const email = typeof body.email === 'string' ? body.email.trim() : '';
+    if (!email) return reply.status(400).send({ error: 'email_required' });
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, email: true, name: true, tenantId: true },
+    });
+    if (!user) return reply.status(401).send({ error: 'invalid_credentials' });
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+    const token = await new jose.SignJWT({
+      sub: user.id,
+      tenantId: user.tenantId,
+    })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setExpirationTime('7d')
+      .setIssuedAt()
+      .sign(secret);
+    return reply.send({
+      token,
+      expiresIn: 7 * 24 * 3600,
+      user: { id: user.id, email: user.email, name: user.name, tenantId: user.tenantId },
+    });
+  });
+
   app.post<{ Querystring: { code?: string } }>(
     '/api/auth/handoff/redeem',
     async (request, reply) => {

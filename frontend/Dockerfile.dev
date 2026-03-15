@@ -1,9 +1,9 @@
-# Frontend runs from monorepo root so workspace deps (shared-types, plugin-sdk) resolve.
+# Dev image: install deps + build workspace packages only. Frontend app is
+# mounted at runtime and run with `next dev` so code changes apply without rebuild.
 FROM node:22-alpine
 RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 
-# Build-time env for Next.js (NEXT_PUBLIC_*)
 ARG NEXT_PUBLIC_API_URL=http://localhost:4000
 ARG NEXT_PUBLIC_WS_URL=http://localhost:4000
 ARG NEXTAUTH_URL=http://localhost:3000
@@ -17,13 +17,14 @@ COPY packages ./packages
 
 RUN pnpm install --frozen-lockfile && \
     pnpm --filter shared-types build && \
-    pnpm --filter plugin-sdk build && \
-    pnpm --filter frontend build
+    pnpm --filter plugin-sdk build
+# Do NOT run: pnpm --filter frontend build
+
+COPY frontend/docker-dev-entrypoint.sh /app/docker-dev-entrypoint.sh
+RUN chmod +x /app/docker-dev-entrypoint.sh
 
 WORKDIR /app/frontend
 EXPOSE 3000
 ENV HOSTNAME=0.0.0.0
-# Auth.js v5: trust Host header (required in Docker / behind proxy)
 ENV AUTH_TRUST_HOST=true
-# Bind all interfaces so the container is reachable from the host / other containers
-CMD ["pnpm", "exec", "next", "start", "-H", "0.0.0.0", "-p", "3000"]
+ENTRYPOINT ["/app/docker-dev-entrypoint.sh"]

@@ -13,11 +13,13 @@ import { registerNotificationsRouter } from './notifications.router';
 import { registerGoalsRouter } from './goals.router';
 import { registerArtifactsRouter } from './artifacts.router';
 import { registerSearchRouter } from './search.router';
+import { registerAdminPluginsRouter } from './admin/plugins.router';
 
 export async function registerRouter(app: FastifyInstance): Promise<void> {
   app.addHook('preHandler', correlationIdMiddleware);
   app.addHook('preHandler', async (request, reply) => {
     if (request.url === '/health' || request.url === '/metrics') return;
+    if (request.method === 'POST' && request.url.startsWith('/api/auth/session')) return;
     return authMiddleware(request, reply);
   });
   app.addHook('preHandler', tenantContextMiddleware);
@@ -46,4 +48,5 @@ export async function registerRouter(app: FastifyInstance): Promise<void> {
   await registerGoalsRouter(app);
   await registerArtifactsRouter(app);
   await registerSearchRouter(app);
+  await registerAdminPluginsRouter(app);
 }

@@ -27,9 +27,10 @@ export function useConversationStream(conversationId: string | null) {
         session && 'accessToken' in session
           ? (session as { accessToken?: string }).accessToken
           : (session as { token?: string })?.token;
+      if (!token) return;
       s = io(WS_URL, {
         path: '/socket.io',
-        auth: { token: token ?? '' },
+        auth: { token },
       });
       s.on('connect', () => {
         s?.emit('join_conversation', conversationId);

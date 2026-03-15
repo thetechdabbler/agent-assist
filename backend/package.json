@@ -46,6 +46,9 @@
     "plugin-sdk": "workspace:*",
     "shared-types": "workspace:*"
   },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "devDependencies": {
     "@types/async-retry": "^1.4.8",
     "@types/node": "^20.11.0",
