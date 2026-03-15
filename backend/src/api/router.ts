@@ -14,6 +14,7 @@ import { registerGoalsRouter } from './goals.router';
 import { registerArtifactsRouter } from './artifacts.router';
 import { registerSearchRouter } from './search.router';
 import { registerAdminPluginsRouter } from './admin/plugins.router';
+import { registerExampleAgentsRouter } from './example-agents.router';
 
 export async function registerRouter(app: FastifyInstance): Promise<void> {
   app.addHook('preHandler', correlationIdMiddleware);
@@ -49,4 +50,5 @@ export async function registerRouter(app: FastifyInstance): Promise<void> {
   await registerArtifactsRouter(app);
   await registerSearchRouter(app);
   await registerAdminPluginsRouter(app);
+  await registerExampleAgentsRouter(app);
 }

@@ -25,6 +25,12 @@ const envSchema = z.object({
   AGENT_GATEWAY_RATE_LIMIT_PER_TENANT: z.string().default('1000').transform(Number),
   AGENT_GATEWAY_URL: z.string().url().optional(),
 
+  /** When true, example agents are listed (dev/local). When unset, treated as true in non-production and false in production. */
+  ENABLE_EXAMPLE_AGENTS: z
+    .string()
+    .optional()
+    .transform((v) => v === 'true' || v === '1'),
+
   CORS_ORIGIN: z.string().default('http://localhost:3000'),
 });
 
@@ -40,5 +46,10 @@ export function getConfig(): Env {
     throw new Error(`Invalid environment: ${JSON.stringify(msg)}`);
   }
   cached = result.data;
+  // When ENABLE_EXAMPLE_AGENTS unset: true in non-production, false in production
+  const env = cached as Env & { ENABLE_EXAMPLE_AGENTS?: boolean };
+  if (env.ENABLE_EXAMPLE_AGENTS === undefined) {
+    env.ENABLE_EXAMPLE_AGENTS = cached.NODE_ENV !== 'production';
+  }
   return cached;
 }

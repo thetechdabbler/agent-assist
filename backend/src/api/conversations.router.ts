@@ -10,7 +10,10 @@ import { setToken, HANDOFF_TOKEN_TTL } from '../db/redis';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
 
-const createBodySchema = z.object({ title: z.string().optional().nullable() });
+const createBodySchema = z.object({
+  title: z.string().optional().nullable(),
+  agentId: z.string().uuid().optional().nullable(),
+});
 const updateTitleSchema = z.object({ title: z.string().min(1) });
 const sendMessageSchema = z.object({
   text: z.string().optional(),
@@ -24,14 +27,27 @@ export async function registerConversationsRouter(app: FastifyInstance): Promise
   app.post<{ Body?: unknown }>('/api/conversations', async (request, reply) => {
     const auth = requireAuth(request);
     const body = createBodySchema.safeParse(request.body ?? {});
-    const title = body.success ? (body.data.title ?? undefined) : undefined;
-    const conv = await conversationService.createConversation(
-      auth.userId,
-      auth.tenantId,
-      title,
-      request,
-    );
-    return reply.status(201).send(conv);
+    if (!body.success) {
+      return reply.status(422).send({ error: 'validation_failed', details: body.error.flatten() });
+    }
+    const title = body.data.title ?? undefined;
+    const agentId = body.data.agentId ?? undefined;
+    try {
+      const conv = await conversationService.createConversation(
+        auth.userId,
+        auth.tenantId,
+        title,
+        request,
+        agentId,
+      );
+      return reply.status(201).send(conv);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'create_failed';
+      if (message.includes('Invalid or disabled agent')) {
+        return reply.status(400).send({ error: 'invalid_agent', message });
+      }
+      throw err;
+    }
   });
 
   app.get('/api/conversations', async (request, reply) => {

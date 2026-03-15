@@ -51,7 +51,7 @@ export default function ConversationPage() {
     enabled: !!id && id !== 'new',
   });
 
-  const { tokens, agentUnavailable, resetStream, connected } = useConversationStream(
+  const { tokens, agentUnavailable, complete, resetStream, connected } = useConversationStream(
     id && id !== 'new' ? id : null,
   );
 
@@ -117,6 +117,8 @@ export default function ConversationPage() {
   const streamingText = tokens.join('');
   const lastMessageId =
     lastSentMessageId ?? (messages.length > 0 ? messages[messages.length - 1].id : null);
+  const waitingForResponse = lastSentMessageId != null && !agentUnavailable && !complete;
+  const showLoadingState = sendMessage.isPending || waitingForResponse;
 
   return (
     <AppLayout>
@@ -193,6 +195,30 @@ export default function ConversationPage() {
               }}
               tenantId={tenantId || undefined}
             />
+          )}
+          {showLoadingState && (
+            <div
+              style={{
+                padding: 12,
+                color: '#666',
+                fontStyle: 'italic',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              <span
+                style={{
+                  width: 18,
+                  height: 18,
+                  border: '2px solid #ccc',
+                  borderTopColor: '#333',
+                  borderRadius: '50%',
+                  animation: 'spin 0.8s linear infinite',
+                }}
+              />
+              Agent is thinking…
+            </div>
           )}
           {agentUnavailable && <AgentUnavailableCard />}
           <div ref={bottomRef} />

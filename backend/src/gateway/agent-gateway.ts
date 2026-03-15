@@ -1,10 +1,14 @@
 import CircuitBreaker from 'opossum';
 import retry from 'async-retry';
 import { z } from 'zod';
-import { getAgentAdapter } from '../plugins/registry';
+import { prisma } from '../db/client';
+import { getAgentAdapter, getAgentAdapterByPluginId } from '../plugins/registry';
 import { emitToConversation } from '../realtime/event-bus';
 import { getConfig } from '../config';
-import { agentAssistAdapterErrorTotal } from '../observability/metrics';
+import {
+  agentAssistAdapterErrorTotal,
+  agentAssistAgentResolutionTotal,
+} from '../observability/metrics';
 import { agentAssistRendererValidationFailureTotal } from '../observability/metrics';
 import * as formRequestService from '../services/form-request.service';
 import * as goalService from '../services/goal.service';
@@ -53,7 +57,16 @@ export async function runAgentTurn(
   ctx: StartTurnContext,
 ): Promise<'ok' | 'unavailable'> {
   const config = getConfig();
-  const adapter = await getAgentAdapter(tenantId);
+  const conv = await prisma.conversation.findFirst({
+    where: { id: conversationId, tenantId },
+    select: { agentId: true },
+  });
+  const adapter = conv?.agentId
+    ? await getAgentAdapterByPluginId(tenantId, conv.agentId)
+    : await getAgentAdapter(tenantId);
+  agentAssistAgentResolutionTotal.add(1, {
+    by_agent_id: conv?.agentId ? 'true' : 'false',
+  });
   if (!adapter) return 'unavailable';
 
   const directives = await goalService.getActiveDirectiveGoals(ctx.userId);

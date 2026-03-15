@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "conversation-create-body.v1",
+  "title": "Create Conversation Request Body",
+  "description": "Request body for POST /api/conversations. Extended for 002: optional agentId to start a dedicated agent thread/channel. Version 1.0.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "title": {
+      "type": ["string", "null"],
+      "description": "Optional conversation title"
+    },
+    "agentId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Optional. When set, creates a dedicated conversation with this agent (plugin ID). Must be an enabled example agent for the tenant; only available in dev/local"
+    }
+  }
+}

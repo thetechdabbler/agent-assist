@@ -20,6 +20,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <Link href="/conversations">Conversations</Link>
             </li>
             <li>
+              <Link href="/agents">Example agents</Link>
+            </li>
+            <li>
               <Link href="/goals">Goals</Link>
             </li>
             <li>

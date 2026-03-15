@@ -60,13 +60,15 @@ model Conversation {
   ownerUserId    String    @map("owner_user_id") @db.Uuid
   tenantId       String    @map("tenant_id") @db.Uuid
   activeGoalId   String?   @map("active_goal_id") @db.Uuid
+  agentId        String?   @map("agent_id") @db.Uuid // when set, dedicated thread/channel with this agent (plugin ID)
   status         String    @map("status") // active | archived
   createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz
 
-  ownerUser   User          @relation("ConversationOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
-  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  activeGoal  Goal?         @relation("ActiveGoal", fields: [activeGoalId], references: [id], onDelete: SetNull)
+  ownerUser   User           @relation("ConversationOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  activeGoal  Goal?          @relation("ActiveGoal", fields: [activeGoalId], references: [id], onDelete: SetNull)
+  agentPlugin PluginRegistry? @relation("ConversationAgent", fields: [agentId], references: [id], onDelete: SetNull)
   messages    Message[]
   attachments Attachment[]
   goals       Goal[]        @relation("ConversationGoals")
@@ -252,12 +254,13 @@ model PluginRegistry {
   version              String    @map("version")
   contractVersion      String    @map("contract_version")
   status               String    @map("status") // active | degraded | disabled
-  configJson           Json?     @map("config_json") @db.JsonB
+  configJson           Json?     @map("config_json") @db.JsonB // may include displayName for UI list
   healthLastCheckedAt  DateTime? @map("health_last_checked_at") @db.Timestamptz
   createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz
 
-  tenantPlugins TenantPlugin[]
+  tenantPlugins         TenantPlugin[]
+  conversationsAsAgent  Conversation[] @relation("ConversationAgent")
 
   @@unique([pluginType, pluginName])
   @@map("plugin_registry")

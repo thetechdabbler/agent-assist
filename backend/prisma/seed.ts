@@ -22,7 +22,7 @@ async function main() {
     },
   });
 
-  const agentAdapter = await prisma.pluginRegistry.upsert({
+  const httpAdapter = await prisma.pluginRegistry.upsert({
     where: {
       pluginType_pluginName: { pluginType: 'agent_adapter', pluginName: 'http' },
     },
@@ -38,18 +38,48 @@ async function main() {
 
   await prisma.tenantPlugin.upsert({
     where: {
-      tenantId_pluginId: { tenantId: tenant.id, pluginId: agentAdapter.id },
+      tenantId_pluginId: { tenantId: tenant.id, pluginId: httpAdapter.id },
     },
     update: { enabled: true, enabledAt: new Date() },
     create: {
       tenantId: tenant.id,
-      pluginId: agentAdapter.id,
+      pluginId: httpAdapter.id,
       enabled: true,
       enabledAt: new Date(),
     },
   });
 
-  console.log('Seed complete: tenant default, user dev@example.com, agent_adapter plugin enabled.');
+  const echoAdapter = await prisma.pluginRegistry.upsert({
+    where: {
+      pluginType_pluginName: { pluginType: 'agent_adapter', pluginName: 'echo' },
+    },
+    update: { configJson: { displayName: 'Echo Agent' } },
+    create: {
+      pluginType: 'agent_adapter',
+      pluginName: 'echo',
+      version: '1.0.0',
+      contractVersion: '1.0',
+      status: 'active',
+      configJson: { displayName: 'Echo Agent' },
+    },
+  });
+
+  await prisma.tenantPlugin.upsert({
+    where: {
+      tenantId_pluginId: { tenantId: tenant.id, pluginId: echoAdapter.id },
+    },
+    update: { enabled: true, enabledAt: new Date() },
+    create: {
+      tenantId: tenant.id,
+      pluginId: echoAdapter.id,
+      enabled: true,
+      enabledAt: new Date(),
+    },
+  });
+
+  console.log(
+    'Seed complete: tenant default, user dev@example.com, agent_adapter plugins (http, echo) enabled.',
+  );
 }
 
 main()

@@ -20,6 +20,10 @@ export const agentAssistAdapterErrorTotal = meter.createCounter(
   'agent_assist_adapter_error_total',
   { description: 'Adapter errors by name' },
 );
+export const agentAssistAgentResolutionTotal = meter.createCounter(
+  'agent_assist_agent_resolution_total',
+  { description: 'Agent adapter resolution by conversation (default vs by agentId)' },
+);
 export const agentAssistRendererValidationFailureTotal = meter.createCounter(
   'agent_assist_renderer_validation_failure_total',
   { description: 'Renderer validation failures by payload type' },

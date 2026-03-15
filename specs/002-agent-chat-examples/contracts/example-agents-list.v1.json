@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "example-agents-list.v1",
+  "title": "Example Agents List Response",
+  "description": "Response body for GET /api/example-agents. Lists agents available for dedicated conversations (dev/local only). Version 1.0.",
+  "type": "object",
+  "required": ["version", "agents"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+$",
+      "description": "Contract version (MAJOR.MINOR)",
+      "examples": ["1.0"]
+    },
+    "agents": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/agentItem" },
+      "description": "List of example agents; may be empty when not in dev/local or when none are enabled"
+    }
+  },
+  "$defs": {
+    "agentItem": {
+      "type": "object",
+      "required": ["id", "displayName"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Plugin ID; use as agentId when creating a dedicated conversation"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Human-readable name shown in the UI list"
+        },
+        "pluginName": {
+          "type": "string",
+          "description": "Registry plugin name (e.g. echo, http)"
+        }
+      }
+    }
+  }
+}

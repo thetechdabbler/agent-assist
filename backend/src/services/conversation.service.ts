@@ -11,13 +11,34 @@ export async function createConversation(
   tenantId: string,
   title?: string | null,
   request?: FastifyRequest,
-): Promise<{ id: string; title: string | null; status: string; createdAt: Date }> {
+  agentId?: string | null,
+): Promise<{
+  id: string;
+  title: string | null;
+  status: string;
+  createdAt: Date;
+  agentId?: string | null;
+}> {
+  if (agentId) {
+    const allowed = await prisma.tenantPlugin.findFirst({
+      where: {
+        tenantId,
+        pluginId: agentId,
+        enabled: true,
+      },
+      include: { plugin: true },
+    });
+    if (!allowed || allowed.plugin.pluginType !== 'agent_adapter') {
+      throw new Error('Invalid or disabled agent for this tenant');
+    }
+  }
   const conv = await prisma.conversation.create({
     data: {
       title: title ?? DEFAULT_TITLE,
       ownerUserId,
       tenantId,
       status: 'active',
+      ...(agentId ? { agentId } : {}),
     },
   });
   const correlationId = request ? getCorrelationId(request) : undefined;
@@ -40,6 +61,7 @@ export async function createConversation(
     title: conv.title,
     status: conv.status,
     createdAt: conv.createdAt,
+    agentId: conv.agentId ?? undefined,
   };
 }
 
