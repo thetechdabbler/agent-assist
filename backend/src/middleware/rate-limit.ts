@@ -1,6 +1,6 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 
-const defaultPerUser = 60;
+const defaultPerUser = 200; // per user per minute (goals, conversations, jobs, etc. share this)
 const defaultPerTenant = 1000;
 const windowMs = 60_000;
 

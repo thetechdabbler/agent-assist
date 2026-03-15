@@ -21,6 +21,8 @@ export function GoalPanel() {
   const { data } = useQuery({
     queryKey: ['goals', 'active'],
     queryFn: () => apiGet<GoalsResponse>('/api/goals?status=active'),
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const goals = data?.goals ?? [];

@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { apiGet } from '@/services/api-client';
 import AppLayout from '@/layouts/AppLayout';
 import { JobDetailPanel } from '@/components/jobs/JobDetailPanel';
-import { useJobUpdates } from '@/hooks/useJobUpdates';
 
 interface JobItem {
   id: string;
@@ -39,19 +38,13 @@ export default function TaskCenterPage() {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  useJobUpdates({
-    onJobChanged: () => {
-      queryClient.invalidateQueries({ queryKey: ['jobs'] });
-      if (selectedJobId) queryClient.invalidateQueries({ queryKey: ['job', selectedJobId] });
-    },
-  });
-
   const { data, isLoading } = useQuery({
     queryKey: ['jobs', statusFilter || undefined],
     queryFn: () =>
       apiGet<JobsResponse>(
         statusFilter ? `/api/jobs?status=${encodeURIComponent(statusFilter)}` : '/api/jobs',
       ),
+    refetchOnWindowFocus: false,
   });
 
   const jobs = data?.jobs ?? [];

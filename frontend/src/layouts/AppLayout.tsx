@@ -4,8 +4,10 @@ import Link from 'next/link';
 import { NotificationCenter } from '@/components/NotificationCenter';
 import { GoalPanel } from '@/components/goals/GoalPanel';
 import { GlobalSearchBar } from '@/components/GlobalSearchBar';
+import { useJobUpdates } from '@/hooks/useJobUpdates';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  useJobUpdates();
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       <aside style={{ width: 220, borderRight: '1px solid #eee', padding: 16 }}>
@@ -25,6 +27,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </li>
             <li>
               <Link href="/search">Search</Link>
+            </li>
+            <li>
+              <Link href="/admin/plugins">Plugins</Link>
             </li>
             <li style={{ marginTop: 8 }}>
               <NotificationCenter markSeenOnOpen />

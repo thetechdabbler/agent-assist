@@ -45,12 +45,14 @@ export function JobDetailPanel({ jobId, onClose, onRetryOrRerun }: JobDetailPane
     queryKey: ['job', jobId],
     queryFn: () => apiGet<JobDetail>(`/api/jobs/${jobId}`),
     enabled: !!jobId,
+    refetchOnWindowFocus: false,
   });
 
   const { data: artifactsData } = useQuery({
     queryKey: ['job', jobId, 'artifacts'],
     queryFn: () => apiGet<{ artifacts: ArtifactSummary[] }>(`/api/jobs/${jobId}/artifacts`),
     enabled: !!jobId,
+    refetchOnWindowFocus: false,
   });
   const artifacts = artifactsData?.artifacts ?? [];
 
